@@ -24,3 +24,9 @@ def complete(model: str, messages: list[dict], temperature: float = 0.0) -> Comp
         completion_tokens=usage.completion_tokens,       # tokens générés
         latency_s=latency,                               # la durée mesurée
     )
+
+def throughput(completion_tokens: int, latency_s: float) -> float:
+    """Débit en tokens par seconde."""                  
+    if latency_s <= 0:                                     # cas impossible en pratique, mais on se protège
+        raise ValueError("latency must be positive")      # erreur explicite plutôt qu'une division par zéro
+    return completion_tokens / latency_s                   # le calcul lui-même
