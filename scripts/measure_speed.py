@@ -1,7 +1,7 @@
 import statistics                                      # médiane, min, max d'une liste de nombres
 from slm_plc_bench.llm import complete                 # ton client de l'étape 1.1
 
-MODELS = ["qwen2.5-coder:1.5b", "qwen2.5-coder:7b"]    # les deux modèles à comparer
+MODELS = ["qwen2.5-coder:7b"]    # les deux modèles à comparer
 PROMPTS = [                                            # 5 demandes de code automate différentes
     "Write a Structured Text FUNCTION_BLOCK that starts a motor with a start button and stops it with a stop button.",
     "Write a Structured Text FUNCTION_BLOCK that turns a lamp on for 5 seconds after a button press, using a TON timer.",
@@ -18,6 +18,7 @@ def measure(model: str) -> list[float]:
         for _ in range(REPEATS):                       # ...répété REPEATS fois (_ = variable dont on ne se sert pas)
             result = complete(model, [{"role": "user", "content": prompt}])  # un appel mesuré
             speeds.append(result.completion_tokens / result.latency_s)   # débit de cet appel, ajouté à la liste
+            print(result.completion_tokens, round(result.latency_s, 2))      # détail : tokens générés et latence en secondes
     return speeds                                      # 15 mesures par modèle
 
 if __name__ == "__main__":                             # ce bloc ne s'exécute que si on lance le fichier directement
