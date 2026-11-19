@@ -3,7 +3,7 @@
 ## Configuration
 - Machine : MacBook Pro M4 Max, 64 Go (Mac16,6)
 - Bande passante mémoire : 546 Go/s (chiffre annoncé, à vérifier sur la fiche Apple)
-- Alimentation : secteur, sauf mention contraire
+- Alimentation : secteur
 - Moteur : Ollama (servi par brew services)
 - Modèles : qwen2.5-coder:1.5b (0,99 Go) et qwen2.5-coder:7b (4,7 Go), quantification par défaut d'Ollama
 - Température : 0
@@ -133,11 +133,44 @@ Log GPU (`sudo powermetrics --samplers gpu_power -i 1000`) pendant 3 appels :
 4. Pourquoi « tokens / latence totale » sous-estime-t-il le vrai débit ?
    La latence totale inclut le prefill, le HTTP et la préparation, en plus de la génération.
    Pour le 7B en série, la cause principale était en fait le bridage de puissance.
-5. À température 0, les réponses sont-elles strictement identiques ?
-   Presque : même nombre de tokens à chaque répétition (839, 839, 839), sauf une fois
-   (656 puis 655). La température 0 n'est pas parfaitement déterministe. À confirmer avec
-   le test de température.
+5. 5. À température 0, les réponses sont-elles strictement identiques ?
+   Non. Voir la section « Test de température » : 2 réponses différentes sur 5 à température 0.
 ## Médiane plutôt que moyenne
 La médiane n'est presque pas affectée par une mesure aberrante (par exemple une mesure ralentie
 par une tâche de fond), alors qu'une seule valeur extrême peut fausser la moyenne.
+
+## Test de température (scripts/temperature_test.py)
+
+**Protocole** : qwen2.5-coder:1.5b, même prompt (compteur de pièces) envoyé 5 fois
+à chaque température, on compte les réponses différentes avec `len(set(answers))`.
+
+**Prédictions (écrites AVANT la mesure)**
+- Température 0 : 1 réponse différente sur 5 (toutes identiques), peut-être 2 de temps en temps.
+- Température 0,8 : 5 sur 5. Raisonnement : une réponse fait ~500 tokens, chacun tiré au sort.
+  Même avec 99 % de chances que chaque token soit identique, 0,99^500 ≈ 0,7 % de chances
+  d'obtenir deux réponses entièrement identiques. Et dès qu'un token diffère, toute la suite
+  diverge, puisque chaque token dépend des précédents.
+
+**Résultats**
+
+| Température | Réponses différentes sur 5 |
+| --- | --- |
+| 0 | 2 |
+| 0,8 | 5 |
+
+**Analyse**
+- 0,8 : prédiction vérifiée. Sur des réponses longues, une température même modérée
+  produit des réponses toutes différentes. Utile pour le best-of-N (étape 6) : générer
+  plusieurs réponses variées et garder celle qui passe le vérificateur.
+- 0 : la température 0 n'est pas déterministe (déjà vu : 656 puis 655 tokens).
+  Causes probables :
+  - calculs en virgule flottante sur GPU : l'ordre des opérations peut changer
+    légèrement le résultat ;
+  - hypothèse : le 1er appel calcule le prefill de zéro, les suivants réutilisent le cache
+    de préfixe. Deux chemins de calcul légèrement différents : quand deux tokens ont des
+    probabilités presque égales, une infime différence fait basculer le choix.
+
+**Conséquence pour le protocole**
+- Même à température 0, répéter chaque tâche plusieurs fois et rapporter la variabilité
+  (intervalles de confiance, étape 5). Ne jamais supposer qu'un seul essai suffit.
  

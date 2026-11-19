@@ -2,7 +2,7 @@ import statistics                                      # médiane, min, max d'un
 from slm_plc_bench.llm import complete, throughput     # client LLM + calcul du débit (llm.py)
 import time
 
-MODELS = ["qwen2.5-coder:7b"]    # les deux modèles à comparer
+MODELS = ["qwen2.5-coder:1.5b"]    # les deux modèles à comparer
 PROMPTS = [                                            # 5 demandes de code automate différentes
     "Write a Structured Text FUNCTION_BLOCK that starts a motor with a start button and stops it with a stop button.",
     "Write a Structured Text FUNCTION_BLOCK that turns a lamp on for 5 seconds after a button press, using a TON timer.",
