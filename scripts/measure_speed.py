@@ -1,5 +1,6 @@
 import statistics                                      # médiane, min, max d'une liste de nombres
 from slm_plc_bench.llm import complete, throughput     # client LLM + calcul du débit (llm.py)
+import time
 
 MODELS = ["qwen2.5-coder:7b"]    # les deux modèles à comparer
 PROMPTS = [                                            # 5 demandes de code automate différentes
@@ -19,6 +20,7 @@ def measure(model: str) -> list[float]:
             result = complete(model, [{"role": "user", "content": prompt}])        # 1. appel au modèle : on garde le résultat
             speeds.append(throughput(result.completion_tokens, result.latency_s))  # 2. débit calculé à partir des 2 nombres, rangé dans la liste
             print(result.completion_tokens, round(result.latency_s, 2))            # détail de cet appel
+            time.sleep(10)        
     return speeds                                      # 15 mesures par modèle
 
 if __name__ == "__main__":                             # ce bloc ne s'exécute que si on lance le fichier directement
